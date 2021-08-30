@@ -462,7 +462,7 @@ Drop BGP traffic at the NVA-VM:
 
 ```bash
 sudo iptables -D FORWARD -i eth0 -o eth0 -j ACCEPT
-sudo iptables -D FORWARD -i eth0 -o eth0 -j DROP
+sudo iptables -A FORWARD -i eth0 -o eth0 -j DROP
 ```
 
 Wait for a couple of minutes and inspect effective routes again. You will see that there are no routes learned from source `VirtualNetworkGateway`

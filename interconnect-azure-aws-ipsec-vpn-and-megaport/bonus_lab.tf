@@ -30,8 +30,8 @@ resource "azurerm_linux_virtual_machine" "nva_vm" {
     azurerm_network_interface.nva_vm_nic.id,
   ]
 
-  custom_data = "c3VkbyBhcHQgdXBkYXRlIC15ICYmIHN1ZG8gYXB0IHVwZ3JhZGUgLXkgJiYgc3VkbyBhcHQgaW5zdGFsbCAteSB0Y3BkdW1wIGhwaW5nMyBpbmV0dXRpbHMtdHJhY2Vyb3V0ZSBuZXRjYXQgdGNwdHJhY2Vyb3V0ZSBpcGVyZjMgbmdpbngKZWNobyAibmV0LmlwdjQuaXBfZm9yd2FyZD0xIiB8IHN1ZG8gdGVlIC1hIC9ldGMvc3lzY3RsLmNvbmYKZWNobyAibmV0LmlwdjQuY29uZi5hbGwuYWNjZXB0X3JlZGlyZWN0cyA9IDEiIHwgc3VkbyB0ZWUgLWEgL2V0Yy9zeXNjdGwuY29uZgplY2hvICJuZXQuaXB2NC5jb25mLmFsbC5zZW5kX3JlZGlyZWN0cyA9IDEiIHwgc3VkbyB0ZWUgLWEgL2V0Yy9zeXNjdGwuY29uZgpzdWRvIHN5c2N0bCAtcA=="
-  
+  custom_data = filebase64("cloud-init.txt")
+
   disable_password_authentication = true
   admin_ssh_key {
         public_key = file(var.ssh_pubkey)

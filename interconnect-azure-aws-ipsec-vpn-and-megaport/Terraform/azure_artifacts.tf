@@ -2,15 +2,15 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 2.50.0"
+      version = "~> 2.74.0"
     }
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 3.0"
+      version = "~> 3.56.0"
     }
     megaport = {
       source = "megaport/megaport"
-      version = "0.1.1"
+      version = "0.1.9"
     }
   }  
 }

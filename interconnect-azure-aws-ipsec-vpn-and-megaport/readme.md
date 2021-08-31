@@ -141,7 +141,7 @@ Neighbor       ASN    State      ConnectedDuration    RoutesReceived    Messages
 172.29.255.15  65515  Connected  17:46:21.9738131     1                 1239            1230
 ```
 
-> :point_right: Notice there are two neighbors in ASN 65515, this is the default ASN used by Azure VPN Gateway and cannot be changed when both ExpressRoute and VPN Gateways are deployed in the same VNET because they are required to establish an iBGP full mesh. This is because whenever ExpressRoute gateway is deployed in the VNET, regardless of whether it is connected to an ExpressRoute circuit or not, it is responsible to program all routes learned across all gateways in the VNET (this includes ExpressRoute Gateways, VPN Gateways and Azure Route Server) into the Azure fabric. Care must be taken when associating route tables with the GatewaySubnet; as a best practice always add a route pointing to the GatewaySubnet address space, and RouteServerSubnet if present, with next-hop type "VirtualNetwork" to route tables associated with the GatewaySubnet, otherwise the iBGP sessions might break, causing the removal of all routes learned by Azure VPN Gateway and Azure Route Server from Azure fabric, which most likely will result in an outage.
+> :point_right: Notice there are two neighbors in ASN 65515, this is the default ASN used by Azure VPN Gateway and cannot be changed when both ExpressRoute and VPN Gateways are deployed in the same VNET as described in the official Azure documentation [here](https://docs.microsoft.com/azure/expressroute/expressroute-howto-coexist-resource-manager#limits-and-limitations). This is because all gateways, including Azure Route Server, deployed in a VNET are required to establish an iBGP full mesh. This is because whenever ExpressRoute gateway is deployed in the VNET, regardless of whether it is connected to an ExpressRoute circuit or not, it is responsible to program all routes learned across all gateways in the VNET (this includes ExpressRoute Gateways, VPN Gateways and Azure Route Server) into the Azure fabric. Care must be taken when associating route tables with the GatewaySubnet; as a best practice always add a route pointing to the GatewaySubnet address space, and RouteServerSubnet if present, with next-hop type "VirtualNetwork" to route tables associated with the GatewaySubnet, otherwise the iBGP sessions might break, causing the removal of all routes learned by Azure VPN Gateway and Azure Route Server from Azure fabric, which most likely will result in an outage.
 
 Using Azure CLI, list the routes learned by Azure ExpressRoute Gateway and verify it is learning the AWS VPC address space:
 
@@ -161,6 +161,8 @@ Network             Origin    SourcePeer     AsPath             Weight    NextHo
 > :point_right: Notice there are three entries for `172.16.0.0/16`, the first entry is being learned from the ExpressRoute circuit, we can tell by looking at the Origin (EBgp) and AsPath (12076) columns. The last two entries are being learned from the VPN Gateway instances and their Origin is IBgp. Although the VPN Gateway learned routes have a shorter AS-PATH than the ExpressRoute circuit learned route, ExpressRoute learned routes are preferred over any other gateway learned routes -including Azure Route Server- with the same prefix length because they are programmed with the largest Weight (32769 vs 32768). Note this Weight attribute is different from the ExpressRoute connection weight attribute and cannot be changed. The only way to prefer IPSec VPN, or Azure Route Server, over ExpressRoute is to advertise more specific prefixes.
 
 #### IPSec VPN Verification
+
+> :point_right: If you are looking for step by step instructions on how to deploy IPSec VPN between Azure VPN Gateway and AWS Virtual Private Gateway, checkout the excellent article written by my colleague and friend Adilson Coutrin [here](https://github.com/adicout/lab/tree/master/Network/aws-vpn-to-azurevpngw-ikev2-bgp)
 
 From AWS portal inspect each of the Site-to-Site VPN connections that were created:
 
@@ -391,8 +393,8 @@ I observed the following limitations while testing IPSec VPN between Azure and A
 
 2. **If using BGP, only two IPSec tunnels can be established** - Azure VPN Gateway exposes up to two VPN endpoints (public IP addresses) if using Active/Active mode, and each endpoint can only have one BGP APIPA speaker; however unlike AWS, it doesn't require that the remote BGP speaker be in the same /30 subnet. On the other hand, AWS exposes two VPN endpoints (public IP addresses) per site-to-site VPN connection, with each connection supporting one BGP APIPA speaker and each Virtual Private Gateway supports up to 10 site-to-site VPN connections ([ref](https://docs.aws.amazon.com/vpn/latest/s2svpn/vpn-limits.html)), however each BGP speaker must belong to a unique /30 subnet, hence only two IPSec tunnels that leverage BGP can be established between both providers. This is not a problem if using static tunnels. One option to workaround this limitation would be to use [Azure virtual WAN](https://docs.microsoft.com/azure/virtual-wan/virtual-wan-about), which now supports multiple virtual hubs in the same region, to have two tunnels with BGP running between Azure and AWS per virtual hub/site-to-site VPN connection pair
 
-3. **If using BGP, up to ~1.3Gbps of total throughput can be achieved** - From my testing, up to ~650Mbps per tunnel throughput can be achieved with Azure VPN Gateway when using CBC ciphers, regardless of SKU or generation; because GCM ciphers cannot be used as described in (1) above and only two IPSec tunnels running BGP can be established as described in (2) above, this means if using BGP the max throughput achieved would be 2x ~650Mbps ~1.3Gbps. 
- 
+3. **If using BGP, up to ~1.3Gbps of total throughput can be achieved** - From my testing, up to ~650Mbps per tunnel throughput can be achieved with Azure VPN Gateway when using CBC ciphers, regardless of SKU or generation; because GCM ciphers cannot be used as described in (1) above and only two IPSec tunnels running BGP can be established as described in (2) above, this means if using BGP the max throughput achieved would be 2x ~650Mbps ~1.3Gbps.
+
 > :point_right: I personally ran an iPerf3 test using an Azure VM size Standard D8a_v4 (8 vcpus, 32 GiB memory) with accelerated networking enabled, which according to the [documentation](https://docs.microsoft.com/azure/virtual-machines/dav4-dasv4-series#dav4-series) supports up to 8Gbps and an AWS EC2 instance size m5.16xlarge which according to the [documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/general-purpose-instances.html) supports up to 20Gbps and achieved around 1.3Gbps as expected. Following is the excerpt from the iPerf3:
 
 ```bash
@@ -403,31 +405,18 @@ AzureAdmin@throughput-test-vm:~$ sudo iperf3 -c 172.16.0.100 -P 64 -t 300
 
 ## Bonus Exercise - Breaking iBGP Between Azure Gateways
 
-Previously I mentioned that if there is a route table associated with the GatewaySubnet and that route table has an entry for the VNET address space pointing to an NVA, if the NVA blocks BGP the iBGP session between ExpressRoute and VPN gateways will break and routes learned over VPN, or through Azure Route Server, will be withdrawn from Azure fabric, resulting in an outage. This bonus exercise deploys another VM with `IP Forwarding` enabled in the NIC, it also deploys a route table with a route for the VNET address space `172.29.0.0/16` pointing to the newly created VM and associates it with the GatewaySubnet. In order to deploy these additional artifacts move file "bonus_lab.tf" in this repository to the same local folder where you downloaded the other Terraform files, then run `terraform plan` followed by `terraform apply`. 
+Previously I mentioned that if there is a route table associated with the GatewaySubnet and that route table has an entry for the VNET address space pointing to an NVA, if the NVA blocks BGP the iBGP session between ExpressRoute and VPN gateways will break and routes learned over VPN, or through Azure Route Server, will be withdrawn from Azure fabric, resulting in an outage. This bonus exercise deploys another VM with `IP Forwarding` enabled in the NIC, it also deploys a route table with a route for the VNET address space `172.29.0.0/16` pointing to the newly created VM and associates it with the GatewaySubnet. In order to deploy these additional artifacts move file "bonus_lab.tf" in this repository to the same local folder where you downloaded the other Terraform files, then run `terraform plan` followed by `terraform apply`.
 
-:point_right: Make sure you keep the BGP session on Megaport VXC shutdown to make sure AWS VPC address space `172.16.0.0/16` is only being learned through IPSec VPN.
+> :point_right: Make sure you keep the BGP session on Megaport VXC shutdown to make sure AWS VPC address space `172.16.0.0/16` is only being learned through IPSec VPN.
 
 Once the deployment completes inspect the route table that was created:
 
 ![](../images/interconnect-azure-aws-ipsec-vpn-and-megaport/azure-bonus-lab-route-table.png)
 
-Log into the VM and run the following commands:
+Log into NVA-VM and verify BGP traffic between the gateways is going through the VM
 
 ```bash
-# Install tcpdump
-sudo apt update -y && sudo apt upgrade -y && sudo apt install -y tcpdump
-
-# Enable IPv4 forwarding and disable IPv4 redirects
-echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
-echo "net.ipv4.conf.all.accept_redirects = 1" | sudo tee -a /etc/sysctl.conf
-echo "net.ipv4.conf.all.send_redirects = 1" | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p
-
-# Configure iptables to allow traffic forwarding
-sudo iptables -A FORWARD -i eth0 -o eth0 -j ACCEPT
-
-# Verify BGP traffic between the gateways is being forwarded to the recently deployed VM
-AzureAdmin@nva-vm:~$ sudo tcpdump -s0 -ni any port 179
+AzureAdmin@nva-vm:~$ sudo tcpdump -ni any port 179
 tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
 listening on any, link-type LINUX_SLL (Linux cooked), capture size 262144 bytes
 20:03:41.025093 IP 172.29.255.12.179 > 172.29.255.15.50544: Flags [P.], seq 4219910679:4219910698, ack 1753277900, win 8197, length 19: BGP
@@ -458,7 +447,7 @@ VirtualNetworkGateway  Active   172.16.0.0/16     VirtualNetworkGateway  172.29.
 VirtualNetworkGateway  Active   172.16.0.0/16     VirtualNetworkGateway  172.29.255.15
 ```
 
-Drop BGP traffic at the NVA-VM:
+Run the following commands from within NVA-VM to block all traffic being sent through it. This will break the iBGP session between the gateways.
 
 ```bash
 sudo iptables -D FORWARD -i eth0 -o eth0 -j ACCEPT
@@ -485,12 +474,23 @@ jumpbox$ az network vnet-gateway list-bgp-peer-status --ids /subscriptions/<SUBS
 (InternalServerError) An error occurred.
 ```
 
-Allow forwarded traffic through the NVA and verify everything works again.
+Add a route in the route table for the GatewaySubnet `172.29.255.0/24` with next hop type `VirtualNetwork` as shown below:
+
+![](../images/interconnect-azure-aws-ipsec-vpn-and-megaport/azure-ibgp-gateway-route.png)
+
+This route allows the gateways to bypass the NVA-VM when communicating among themselves, restoring the iBPG sessions.
+
+Inspect effective routes for the VM NIC again and verify the routes are showing up:
 
 ```bash
-sudo iptables -D FORWARD -i eth0 -o eth0 -j DROP
-sudo iptables -A FORWARD -i eth0 -o eth0 -j ACCEPT
+jumpbox$ az network nic show-effective-route-table --ids /subscriptions/705a17a0-7bcd-45db-a1fd-36d4c3457e6e/resourceGroups/vpn-rg/providers/Microsoft.Network/networkInterfaces/vm-nic -o table | grep -E 'Source|Gateway|--'
+Source                 State    Address Prefix    Next Hop Type          Next Hop IP
+---------------------  -------  ----------------  ---------------------  -------------
+VirtualNetworkGateway  Active   172.16.0.0/16     VirtualNetworkGateway  172.29.255.12
+VirtualNetworkGateway  Active   172.16.0.0/16     VirtualNetworkGateway  172.29.255.13
 ```
+
+> :point_right: If you are using Azure Route Server you must also add a route for `RouteServerSubnet` address space with next hop type `VirtualNetwork` to the route table associated with the `GatewaySubnet`
 
 ## Cleanup Resources
 

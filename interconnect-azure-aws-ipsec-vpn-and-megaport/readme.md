@@ -83,7 +83,7 @@ From Megaport dashboard navigate to MCR Looking Glass and verify that the BGP se
 
 ![](../images/interconnect-azure-aws-ipsec-vpn-and-megaport/mcr-status.png)
 
-> :point_right: If you look closely you will notice that the MCR has only one BGP session with Azure, this means there is no redundancy for the Azure ExpressRoute circuit. This was a deliberate choice not because this is a lab, but because Azure ExpressRoute edge routers don't discard BGP prefixes that carry BGP ASN 12076 (Azure ExpressRoute) in their AS-PATH and MCR will advertise all prefixes received from one VXC to all other VXCs, leading to route flaps if both ports of an Azure ExpressRoute circuit are connected to the same MCR
+> :point_right: If you look closely you will notice that the MCR has only one BGP session with Azure, this means there is no redundancy for the Azure ExpressRoute circuit. This was a deliberate choice not because this is a lab, but because Azure ExpressRoute edge routers don't discard BGP prefixes that carry BGP ASN 12076 (Azure ExpressRoute) in their AS-PATH and MCR will advertise all prefixes received from one VXC to all other VXCs, leading to route flaps if both ports of an Azure ExpressRoute circuit are connected to the same MCR. This behavior is not exclusive to Megaport MCR, this is standard BGP behavior -routes learned from one eBGP neighbor are sent to all other eBGP and iBGP neighbors; if you connect both ports of an ExpressRoute circuit to the same router on your end you need to make sure to implement filtering as to not cross-advertise routes from ASN 12076 between ExpressRoute circuit ports
 
 From AWS portal navigate to "Direct Connect" located under "Networking & Content Delivery" and verify the state and BGP status of the Virtual Interface:
 

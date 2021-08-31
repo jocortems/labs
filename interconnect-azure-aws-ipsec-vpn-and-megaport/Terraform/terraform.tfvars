@@ -1,3 +1,3 @@
-megaport_username = "jorge.cortes@microsoft.com"
-megaport_password = "R@d10H3@dMEGAPORT#"
-mcr_name = "jocorte-demo"
+megaport_username = "YOUR_USERNAME"
+megaport_password = "MEGAPORT PASSWORD"
+mcr_name = "MCR NAME"

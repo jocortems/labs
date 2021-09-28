@@ -185,6 +185,7 @@ resource "azurerm_virtual_network_gateway" "vpn_example" {
 
   type     = "Vpn"
   vpn_type = "RouteBased"
+  generation = "Generation2"
 
   active_active = true
   enable_bgp    = true
@@ -248,13 +249,13 @@ resource "azurerm_virtual_network_gateway_connection" "aws_cgw_connection_0" {
   enable_bgp = true
 
   ipsec_policy {
-      dh_group = "DHGroup24"
+      dh_group = "DHGroup14"
       ike_encryption = "AES256"
       ike_integrity = "SHA256"
-      ipsec_encryption = "AES256"
-      ipsec_integrity = "SHA256"
-      pfs_group = "PFS24"
-      sa_lifetime = 3100
+      ipsec_encryption = "GCMAES256"
+      ipsec_integrity = "GCMAES256"
+      pfs_group = "PFS14"
+      sa_lifetime = 3600
   }
 }
 
@@ -271,13 +272,13 @@ resource "azurerm_virtual_network_gateway_connection" "aws_cgw_connection_0_b" {
   enable_bgp = true
 
   ipsec_policy {
-      dh_group = "DHGroup24"
+      dh_group = "DHGroup14"
       ike_encryption = "AES256"
       ike_integrity = "SHA256"
-      ipsec_encryption = "AES256"
-      ipsec_integrity = "SHA256"
-      pfs_group = "PFS24"
-      sa_lifetime = 3100
+      ipsec_encryption = "GCMAES256"
+      ipsec_integrity = "GCMAES256"
+      pfs_group = "PFS14"
+      sa_lifetime = 3600
   }
 }
 
@@ -294,13 +295,13 @@ resource "azurerm_virtual_network_gateway_connection" "aws_cgw_connection_1" {
   enable_bgp = true
 
   ipsec_policy {
-      dh_group = "DHGroup24"
+      dh_group = "DHGroup14"
       ike_encryption = "AES256"
       ike_integrity = "SHA256"
-      ipsec_encryption = "AES256"
-      ipsec_integrity = "SHA256"
-      pfs_group = "PFS24"
-      sa_lifetime = 3100
+      ipsec_encryption = "GCMAES256"
+      ipsec_integrity = "GCMAES256"
+      pfs_group = "PFS14"
+      sa_lifetime = 3600
   }
 }
 
@@ -317,13 +318,13 @@ resource "azurerm_virtual_network_gateway_connection" "aws_cgw_connection_1_b" {
   enable_bgp = true
 
   ipsec_policy {
-      dh_group = "DHGroup24"
+      dh_group = "DHGroup14"
       ike_encryption = "AES256"
       ike_integrity = "SHA256"
-      ipsec_encryption = "AES256"
-      ipsec_integrity = "SHA256"
-      pfs_group = "PFS24"
-      sa_lifetime = 3100
+      ipsec_encryption = "GCMAES256"
+      ipsec_integrity = "GCMAES256"
+      pfs_group = "PFS14"
+      sa_lifetime = 3600
   }
 }
 
@@ -357,6 +358,8 @@ resource "azurerm_linux_virtual_machine" "vpn_vm" {
   network_interface_ids = [
     azurerm_network_interface.vpn_vm.id,
   ]
+
+  custom_data = filebase64("cloud-init.txt")
   
   disable_password_authentication = true
   admin_ssh_key {

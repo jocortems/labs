@@ -153,24 +153,22 @@ resource "aws_vpn_connection" "aws_to_azure_vngw_in_0" {
     tunnel2_preshared_key = var.azure_aws_vpn_shared_key
     tunnel1_ike_versions = ["ikev2"]
     tunnel2_ike_versions = ["ikev2"]
-    tunnel1_phase1_dh_group_numbers = [24]
-    tunnel2_phase1_dh_group_numbers = [24]
+    tunnel1_phase1_dh_group_numbers = [14]
+    tunnel2_phase1_dh_group_numbers = [14]
     tunnel1_phase1_encryption_algorithms = ["AES256"]
     tunnel2_phase1_encryption_algorithms = ["AES256"]
     tunnel1_phase1_integrity_algorithms = ["SHA2-256"]
     tunnel2_phase1_integrity_algorithms = ["SHA2-256"]
-    tunnel1_phase2_dh_group_numbers = [24]
-    tunnel2_phase2_dh_group_numbers = [24]
-    tunnel1_phase2_encryption_algorithms = ["AES256"]
-    tunnel2_phase2_encryption_algorithms = ["AES256"]
-    tunnel1_phase2_integrity_algorithms = ["SHA2-256"]
-    tunnel2_phase2_integrity_algorithms = ["SHA2-256"]
+    tunnel1_phase2_dh_group_numbers = [14]
+    tunnel2_phase2_dh_group_numbers = [14]
+    tunnel1_phase2_encryption_algorithms = ["AES256-GCM-16"]
+    tunnel2_phase2_encryption_algorithms = ["AES256-GCM-16"]
     tunnel1_startup_action = "start"
     tunnel2_startup_action = "start"
     tunnel1_phase1_lifetime_seconds = 28000
     tunnel2_phase1_lifetime_seconds = 28000
-    tunnel1_phase2_lifetime_seconds = 3000
-    tunnel2_phase2_lifetime_seconds = 3000
+    tunnel1_phase2_lifetime_seconds = 3600
+    tunnel2_phase2_lifetime_seconds = 3600
 }
 
 resource "aws_vpn_connection" "aws_to_azure_vngw_in_1" {
@@ -185,24 +183,22 @@ resource "aws_vpn_connection" "aws_to_azure_vngw_in_1" {
     tunnel2_preshared_key = var.azure_aws_vpn_shared_key
     tunnel1_ike_versions = ["ikev2"]
     tunnel2_ike_versions = ["ikev2"]
-    tunnel1_phase1_dh_group_numbers = [24]
-    tunnel2_phase1_dh_group_numbers = [24]    
+    tunnel1_phase1_dh_group_numbers = [14]
+    tunnel2_phase1_dh_group_numbers = [14]
     tunnel1_phase1_encryption_algorithms = ["AES256"]
     tunnel2_phase1_encryption_algorithms = ["AES256"]
     tunnel1_phase1_integrity_algorithms = ["SHA2-256"]
     tunnel2_phase1_integrity_algorithms = ["SHA2-256"]
-    tunnel1_phase2_dh_group_numbers = [24]
-    tunnel2_phase2_dh_group_numbers = [24]
-    tunnel1_phase2_encryption_algorithms = ["AES256"]
-    tunnel2_phase2_encryption_algorithms = ["AES256"]
-    tunnel1_phase2_integrity_algorithms = ["SHA2-256"]
-    tunnel2_phase2_integrity_algorithms = ["SHA2-256"]
+    tunnel1_phase2_dh_group_numbers = [14]
+    tunnel2_phase2_dh_group_numbers = [14]
+    tunnel1_phase2_encryption_algorithms = ["AES256-GCM-16"]
+    tunnel2_phase2_encryption_algorithms = ["AES256-GCM-16"]
     tunnel1_startup_action = "start"
     tunnel2_startup_action = "start"
     tunnel1_phase1_lifetime_seconds = 28000
     tunnel2_phase1_lifetime_seconds = 28000
-    tunnel1_phase2_lifetime_seconds = 3000
-    tunnel2_phase2_lifetime_seconds = 3000
+    tunnel1_phase2_lifetime_seconds = 3600
+    tunnel2_phase2_lifetime_seconds = 3600
 }
 
 resource "aws_dx_gateway" "dx_gateway" {
